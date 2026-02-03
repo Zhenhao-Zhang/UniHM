@@ -11,7 +11,7 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 - Code Quality Level: Tired grad student, lots of hard code in my repo
 - Training Enviroment: A800 80G GPUs
 - Questions: please drop me an email, it is the fastest way to get feedback
-- For Enviroment Set Up: I set the enviroment in my gpus by this way, may have more easy ways. But I believe you can set up the enviroment by my steps
+
 
 # Plan
 
@@ -23,12 +23,17 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 
 Any Question, feel free to contact zhangzhh2024@shanghaitech.edu.cn
 
+# Enviroments SetUp
+```
+conda env create -f environment.yaml
+```
+# Pretrain Weights
+[Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
+
 # DataSet
 [DexYCB](https://dex-ycb.github.io/)
 
 [OAKINK](https://github.com/oakink/OakInk)
-# Pretrain Weights
-[Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
 
 # Weights of UniHM
 [Weights](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
