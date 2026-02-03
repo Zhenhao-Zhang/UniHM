@@ -16,14 +16,22 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 # Plan
 
 - [ ] Paper Released.
-- [ ] Code.
-- [ ] Pretrained Weights.
-- [ ] Dataset.
-- [ ] Quick Start
-- [ ] Weights of UniHM
+- [√] Code.
+- [√] Pretrained Weights.
+- [√] Dataset.
+- [√] Weights of UniHM
 
 Any Question, feel free to contact zhangzhh2024@shanghaitech.edu.cn
 
+# DataSet
+[DexYCB](https://dex-ycb.github.io/)
+
+[OAKINK](https://github.com/oakink/OakInk)
+# Pretrain Weights
+[Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
+
+# Weights of UniHM
+[Weights](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
 
 # Acknowledgement
 Thanks for the excellent work [OpenHOI](https://github.com/Zhenhao-Zhang/OpenHOI),[DexGYS](https://github.com/iSEE-Laboratory/Grasp-as-You-Say),[AffordDP](https://github.com/SshiJwu/AffordDP),[CLIPort](https://github.com/huangwl18/ReKep),[MotionGPT](https://github.com/OpenMotionLab/MotionGPT)
