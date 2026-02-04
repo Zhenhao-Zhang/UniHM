@@ -20,6 +20,7 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 - [√] Code.
 - [√] Pretrained Weights.
 - [√] Dataset.
+- [√] Quick Satrt
 - [√] Weights of UniHM
 
 Any Question, feel free to contact zhangzhh2024@shanghaitech.edu.cn
@@ -37,6 +38,16 @@ Tips: You can install [dex-retargeting](https://github.com/dexsuite/dex-retarget
 
 [OAKINK](https://github.com/oakink/OakInk)
 
+# Quick Start
+1. train VQVAE Encoder-Decoder
+```
+python train_vqvae.py
+python train_vqvae_muti_encoder.py
+```
+2. Train DexHand VLM
+```
+python train_sft.py
+```
 # Weights of UniHM
 [Weights](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
 
