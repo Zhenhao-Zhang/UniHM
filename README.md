@@ -34,11 +34,26 @@ Tips: You can install [dex-retargeting](https://github.com/dexsuite/dex-retarget
 # Pretrain Weights
 [Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
 
-# DataSet
+# Data Prepare
+1. Dataset
+
 [DexYCB](https://dex-ycb.github.io/)
 
 [OAKINK](https://github.com/oakink/OakInk)
 
+2. DataPrepare
+
+[DexYCB](https://github.com/Zhenhao-Zhang/UniHM/blob/main/UniHM/createDataset.ipynb)
+
+[OAKINK](https://github.com/Zhenhao-Zhang/UniHM/blob/main/UniHM/create_dataset_oakink.py)
+
+3. Open-Vocabulary Instructions
+
+[Open-Vocabulary Instructions](https://github.com/Zhenhao-Zhang/UniHM/blob/main/DataProcess/high_level_instructions.py)
+
+4. (Optional) PointCloud Process
+
+[PointCloud](https://github.com/Zhenhao-Zhang/UniHM/blob/main/DataProcess/point_cloud_process.py)
 # Quick Start
 1. train VQVAE Encoder-Decoder
 ```
@@ -100,7 +115,7 @@ If you want to open-vocabulary Segmentation, try the following method
 
 [Deoxys](https://github.com/UT-Austin-RPL/deoxys_control)
 
-5. InspireHand Development(12DoF to 6 DoF)
+6. InspireHand Development(12DoF to 6 DoF)
 
 [Maniptrans](https://maniptrans.github.io/)
 # Acknowledgement
