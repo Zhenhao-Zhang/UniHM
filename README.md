@@ -1,5 +1,6 @@
 # [ICLR 2026] UniHM: Unified Dexterous Hand Manipulation with Vision Language Model
 This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous Hand Manipulation with Vision Language Model**
+
 [Project Page](https://zhangzhh.cn/UniHM_page/)
 
 <div align="center">
@@ -27,6 +28,7 @@ Any Question, feel free to contact zhangzhh2024@shanghaitech.edu.cn
 ```
 conda env create -f environment.yaml
 ```
+Tips: You can install [dex-retargeting](https://github.com/dexsuite/dex-retargeting) first, then install [qwen](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B) and other packages.
 # Pretrain Weights
 [Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
 
