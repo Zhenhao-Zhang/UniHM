@@ -47,7 +47,7 @@ Tips: You can install [dex-retargeting](https://github.com/dexsuite/dex-retarget
 
 [OAKINK](https://github.com/Zhenhao-Zhang/UniHM/blob/main/UniHM/create_dataset_oakink.py)
 
-3. Open-Vocabulary Instructions
+3. (Optional) Open-Vocabulary Instructions
 
 [Open-Vocabulary Instructions](https://github.com/Zhenhao-Zhang/UniHM/blob/main/DataProcess/high_level_instructions.py)
 
