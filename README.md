@@ -1,7 +1,7 @@
 # [ICLR 2026] UniHM: Unified Dexterous Hand Manipulation with Vision Language Model
 This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous Hand Manipulation with Vision Language Model**
 
-[Project Page](https://zhangzhh.cn/UniHM_page/)
+[[Paper]](https://zhenhao-zhang.github.io/papers/UniHM/UniHM.pdf) [[Project Page]](https://zhenhao-zhang.github.io/UniHM_page/)
 
 <div align="center">
     <img src="pipeline.png" height=500>
@@ -16,7 +16,7 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 
 # Plan
 
-- [ ] Paper Released.
+- [√] Paper Released.
 - [√] Code.
 - [√] Pretrained Weights.
 - [√] Dataset.
