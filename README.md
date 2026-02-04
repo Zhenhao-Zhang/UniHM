@@ -51,5 +51,56 @@ python train_sft.py
 # Weights of UniHM
 [Weights](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
 
+# Real-World SetUP
+
+1. The SDK of our Robots
+
+[Franka](https://frankarobotics.github.io/docs/)
+
+[Inspire Hand](https://wiki.pndbotics.com/dexterous_hands/inspire_dexterous_hands/)
+
+[Xhand](https://github.com/yoimisan/xhand_control_python)
+
+[Panda Gripper](https://github.com/frankarobotics/external_gripper_example)
+
+2. Camera 
+
+[CalibrationTools](https://github.com/littlebearsama/CalibrationTools)
+
+3. VLM Planner
+
+[Cliport](https://cliport.github.io/)
+
+[Extend Cliport to 3D](https://github.com/google-research/ravens/blob/master/ravens/models/transport_6dof.py)
+
+Also, if you donnot want to deploy CLIPort, we also suggest two **zero-shot**, more powerful and open-vocabulary VLM Planner
+
+[RekeP](https://rekep-robot.github.io/)
+
+[RoboBrain](https://superrobobrain.github.io/)
+
+4. Point-SAM
+
+4-1 2D Mask Segmentation
+
+If you want more fast Segmentation, use
+
+[GroundedSAM2](https://github.com/IDEA-Research/Grounded-SAM-2)
+
+If you want to open-vocabulary Segmentation, try the following method
+
+[Seg-R1](https://github.com/geshang777/Seg-R1)
+
+4-2 3D PointCloud
+
+[3D Point from 2D Mask](https://developer.supervisely.com/getting-started/python-sdk-tutorials/point-clouds/point-cloud-segmentation-with-2d-mask-guidance)
+
+5. IK System
+
+[Deoxys](https://github.com/UT-Austin-RPL/deoxys_control)
+
+5. InspireHand Development(12DoF to 6 DoF)
+
+[Maniptrans](https://maniptrans.github.io/)
 # Acknowledgement
 Thanks for the excellent work [OpenHOI](https://github.com/Zhenhao-Zhang/OpenHOI),[DexGYS](https://github.com/iSEE-Laboratory/Grasp-as-You-Say),[AffordDP](https://github.com/SshiJwu/AffordDP),[CLIPort](https://github.com/huangwl18/ReKep),[MotionGPT](https://github.com/OpenMotionLab/MotionGPT)
