@@ -85,9 +85,9 @@ python train_sft.py
 
 3. VLM Planner
 
-[Cliport](https://cliport.github.io/)
+[CLIPort](https://cliport.github.io/)
 
-[Extend Cliport to 3D](https://github.com/google-research/ravens/blob/master/ravens/models/transport_6dof.py)
+[Extend CLIPort to 3D](https://github.com/google-research/ravens/blob/master/ravens/models/transport_6dof.py)
 
 Also, if you donnot want to deploy CLIPort, we also suggest two **zero-shot**, more powerful and open-vocabulary VLM Planner
 
