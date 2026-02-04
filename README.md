@@ -22,6 +22,7 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 - [√] Dataset.
 - [√] Quick Satrt
 - [√] Weights of UniHM
+- [√] Real-World SetUP
 
 Any Question, feel free to contact zhangzhh2024@shanghaitech.edu.cn
 
