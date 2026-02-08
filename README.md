@@ -64,7 +64,17 @@ python train_vqvae_muti_encoder.py
 ```
 python train_sft.py
 ```
-# Weights of UniHM
+
+3. Inference
+```
+python inference.py
+```
+
+4. Evalution
+```
+python eval.py
+```
+# Weights of UniHM(This weights for Real-World Deployed on Inspire Hands)
 [Weights](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
 
 # Real-World SetUP
