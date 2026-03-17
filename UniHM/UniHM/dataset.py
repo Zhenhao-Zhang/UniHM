@@ -23,6 +23,7 @@ def load_dataset_squential(file):
     ability_hand_qpos = dict(data["ability_hand"].tolist())["robot_qpos"]
     panda_gripper_qpos = dict(data["panda_gripper"].tolist())["robot_qpos"]
     gripper_qpos = dict(data["panda_gripper"].tolist())["robot_qpos"]
+    inspire_hand_qpos = dict(data["inspire_hand"].tolist())["robot_qpos"]
 
     ycb_ids = data["ycb_ids"]
     ycb_ids_names = data["ycb_ids_names"]
@@ -68,6 +69,7 @@ def load_dataset_squential(file):
         "ability_hand_qpos": torch.tensor(ability_hand_qpos),
         "panda_gripper_qpos": torch.tensor(panda_gripper_qpos),
         "gripper_qpos": torch.tensor(gripper_qpos),
+        "inspire_hand_qpos": torch.tensor(inspire_hand_qpos),
         "background_with_obj_names": background_with_obj_names,
         "background_with_obj_ids": background_with_obj_ids,
         "grasped_with_obj_name": grasped_with_obj_name,

@@ -1,4 +1,3 @@
-from vizHandObj.hand_robot_viewer import RobotHandViewer
 import numpy as np
 from .utils import *
 
@@ -27,7 +26,7 @@ def _classify_fingertips_svh(robot):
     return thumb_idx, others
 
 
-def _tip_positions_in_cam(viewer: RobotHandViewer, robot):
+def _tip_positions_in_cam(viewer, robot):
     cam_T_world = viewer.camera_pose.inv()
     tips = _get_fingertip_links(robot)
     P = []
@@ -60,7 +59,7 @@ def _extract_joint_limits_safe(joint):
     return lower, upper
 
 
-def _numerical_jacobian(viewer: RobotHandViewer, robot, q: np.ndarray, eps=1e-4):
+def _numerical_jacobian(viewer, robot, q: np.ndarray, eps=1e-4):
     q = q.copy()
     robot.set_qpos(q)
     viewer.scene.update_render()
@@ -86,7 +85,7 @@ def _numerical_jacobian(viewer: RobotHandViewer, robot, q: np.ndarray, eps=1e-4)
 
 
 def optimize_svh_to_fixed_object(
-    viewer: RobotHandViewer,
+    viewer,
     objpose_seq: np.ndarray,
     grasped_obj_idx: int,
     obj_pc_local: np.ndarray,

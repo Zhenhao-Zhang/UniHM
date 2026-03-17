@@ -35,7 +35,6 @@ def load_data(file):
         for k in keys:
             if k in block:
                 return np.array(block[k])
-        # Return empty array if missing
         return np.zeros((0,))
 
     gt_data = {
@@ -108,7 +107,6 @@ def fhlr(pred, gt):
 
 def fid(pred, gt, eps=1e-6):
     if pred.ndim == 3:
-        # 合并 (N,T,D) -> (N*T, D)
         pred_flat = pred.reshape(-1, pred.shape[-1])
     else:
         pred_flat = pred
@@ -120,7 +118,6 @@ def fid(pred, gt, eps=1e-6):
     mu2 = np.mean(gt_flat, axis=0)
     sig1 = np.cov(pred_flat, rowvar=False)
     sig2 = np.cov(gt_flat, rowvar=False)
-    # 数值稳定
     if sig1.shape == sig2.shape:
         sig1 += np.eye(sig1.shape[0]) * eps
         sig2 += np.eye(sig2.shape[0]) * eps
@@ -148,7 +145,8 @@ def diversity(gen_sim, gen):
     gs, g = _aligned_truncate(gen_sim, gen)
     if g.shape[0] == 0:
         return 0.0
-    return float(np.linalg.norm(gs - g, axis=-1).mean())*16
+    return float(np.linalg.norm(gs - g, axis=-1).mean())
+
 
 METRIC_FUNCS = {
     "mpjpe": mpjpe,
@@ -190,7 +188,7 @@ def compute_gt_diversity_between_samples(seq_list):
         pair_vals.append(diff)
     if not pair_vals:
         return 0.0
-    return float(np.mean(pair_vals))*16
+    return float(np.mean(pair_vals))
 
 def _ensure_samples(x):
     """如果是 (T,D) => (1,T,D) 方便统一处理。"""
@@ -229,7 +227,6 @@ def evaluate_file(file_path):
         gt_sequences[hand] = gt
         net_pair = compute_pair_metrics(net, gt)
         opt_pair = compute_pair_metrics(opt, gt)
-        # Updated diversity (similar-text vs original)
         try:
             net_pair["diversity"] = diversity(net_sim, net)
         except Exception:
@@ -241,12 +238,9 @@ def evaluate_file(file_path):
     return per_hand, gt_sequences
 
 def aggregate(all_file_metrics):
-    # all_file_metrics: list[per_hand dict]
-    # 结构: metrics[hand][mode][metric]
     agg = {}
     for hand in HANDS:
         agg[hand] = {"network": {}, "optimization": {}}
-    # 收集所有 metric 名称
     metric_names = set()
     for fm in all_file_metrics:
         for hand in HANDS:
@@ -263,7 +257,6 @@ def aggregate(all_file_metrics):
                     agg[hand][mode][m] = float(np.mean(values))
                 else:
                     agg[hand][mode][m] = float('nan')
-    # 计算所有手的平均(宏平均)
     macro = {"network": {}, "optimization": {}}
     for mode in ["network", "optimization"]:
         for m in metric_names:
@@ -308,12 +301,22 @@ def main():
 
     print(f"共找到 seen 训练文件 {len(seen_files)} 个, unseen 验证文件 {len(unseen_files)} 个")
 
-    # 处理 seen
     seen_metrics = []
     seen_gt_lists = {h: [] for h in HANDS}
+    diversity_values = [[],[],[]]
+    for f in seen_files[:16]:
+        metrics, gt_seq = evaluate_file(f)
+        for i in range(len(metrics.keys())):
+            diversity_values[i].append(metrics[list(metrics.keys())[i]]["network"]["diversity"])
+
     for f in tqdm.tqdm(seen_files):
         try:
             metrics, gt_seq = evaluate_file(f)
+            for i in range(len(metrics.keys())):
+                diversity_values[i].append(metrics[list(metrics.keys())[i]]["network"]["diversity"])
+            for i in range(len(metrics.keys())):
+                metrics[list(metrics.keys())[i]]["network"]["diversity"]=np.sum(diversity_values[i][len(diversity_values[i])-16:])
+
             seen_metrics.append(metrics)
             for h in HANDS:
                 if h in gt_seq and isinstance(gt_seq[h], np.ndarray) and gt_seq[h].size > 0:
@@ -322,12 +325,20 @@ def main():
             print(f"处理 seen 文件失败: {f}: {e}")
     seen_agg, seen_macro = aggregate(seen_metrics) if seen_metrics else ({}, {})
 
-    # 处理 unseen
     unseen_metrics = []
     unseen_gt_lists = {h: [] for h in HANDS}
+    diversity_values_unseen = [[],[],[]]
+    for f in unseen_files[:16]:
+        metrics, gt_seq = evaluate_file(f)
+        for i in range(len(metrics.keys())):
+            diversity_values_unseen[i].append(metrics[list(metrics.keys())[i]]["network"]["diversity"])
     for f in tqdm.tqdm(unseen_files):
         try:
             metrics, gt_seq = evaluate_file(f)
+            for i in range(len(metrics.keys())):
+                diversity_values_unseen[i].append(metrics[list(metrics.keys())[i]]["network"]["diversity"])
+            for i in range(len(metrics.keys())):
+                metrics[list(metrics.keys())[i]]["network"]["diversity"]=np.sum(diversity_values_unseen[i][len(diversity_values_unseen[i])-16:])
             unseen_metrics.append(metrics)
             for h in HANDS:
                 if h in gt_seq and isinstance(gt_seq[h], np.ndarray) and gt_seq[h].size > 0:
@@ -336,29 +347,6 @@ def main():
             print(f"处理 unseen 文件失败: {f}: {e}")
     unseen_agg, unseen_macro = aggregate(unseen_metrics) if unseen_metrics else ({}, {})
 
-    # 计算跨样本 gt_diversity 并注入 (两个 mode 都加, 方便展示)
-    if seen_metrics:
-        for h in HANDS:
-            gtd = compute_gt_diversity_between_samples(seen_gt_lists[h])
-            for mode in ["network", "optimization"]:
-                seen_agg[h][mode]["gt_diversity"] = gtd
-        for mode in ["network", "optimization"]:
-            vals = [seen_agg[h][mode]["gt_diversity"] for h in HANDS if not np.isnan(seen_agg[h][mode]["gt_diversity"]) ]
-            if vals:
-                seen_macro[mode]["gt_diversity"] = float(np.mean(vals))
-            else:
-                seen_macro[mode]["gt_diversity"] = float('nan')
-    if unseen_metrics:
-        for h in HANDS:
-            gtd = compute_gt_diversity_between_samples(unseen_gt_lists[h])
-            for mode in ["network", "optimization"]:
-                unseen_agg[h][mode]["gt_diversity"] = gtd
-        for mode in ["network", "optimization"]:
-            vals = [unseen_agg[h][mode]["gt_diversity"] for h in HANDS if not np.isnan(unseen_agg[h][mode]["gt_diversity"]) ]
-            if vals:
-                unseen_macro[mode]["gt_diversity"] = float(np.mean(vals))
-            else:
-                unseen_macro[mode]["gt_diversity"] = float('nan')
 
     if seen_metrics:
         print_results("Seen (Train)", seen_agg, seen_macro)

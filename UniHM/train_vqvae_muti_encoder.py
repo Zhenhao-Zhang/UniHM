@@ -15,6 +15,7 @@ ROBOT_KEYS_ORDER = [
     "leap_hand_qpos",
     "ability_hand_qpos",
     "panda_hand_qpos",
+    "inspire_hand_qpos"
 ]
 
 # Will be initialized from args in main
@@ -338,19 +339,19 @@ def build_argparser():
     p.add_argument("--do_phase2", action="store_true",default=True, help="Run Phase 2: encoder-only finetune inside VQ-VAE")
 
     # Phase 1 (distill) hparams
-    p.add_argument("--phase1_epochs", type=int, default=100)
+    p.add_argument("--phase1_epochs", type=int, default=10)
     p.add_argument("--phase1_lr", type=float, default=5e-3)
     p.add_argument("--phase1_wd", type=float, default=1e-4)
 
     # Code alignment hparams
-    p.add_argument("--code_align_epochs", type=int, default=100)
+    p.add_argument("--code_align_epochs", type=int, default=10)
     p.add_argument("--code_align_lr", type=float, default=1e-3)
     p.add_argument("--code_align_wd", type=float, default=1e-4)
     p.add_argument("--code_align_l1_w", type=float, default=1.0, help="Weight for L1 loss between quantized codes")
     p.add_argument("--code_align_embed_w", type=float, default=1.0, help="Weight for embedding loss from VectorQuantizer on student path")
 
     # Phase 2 (finetune) hparams
-    p.add_argument("--phase2_epochs", type=int, default=20)
+    p.add_argument("--phase2_epochs", type=int, default=10)
     p.add_argument("--phase2_lr", type=float, default=5e-4)
     p.add_argument("--phase2_wd", type=float, default=1e-4)
 

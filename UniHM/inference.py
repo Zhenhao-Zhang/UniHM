@@ -1,15 +1,14 @@
-from vizHandObj.hand_robot_viewer import RobotHandViewer
+from utils.retargeting_processor import RetargetingProcessor
 import numpy as np
 import os
 import argparse
 from glob import glob
-from pytransform3d import rotations as pr
 from UniHM.optimizer import optimize_allegro_to_fixed_object,detect_object_motion_start, optimize_mano_to_fixed_object
 from UniHM.optimizer import optimize_shadow_to_fixed_object
 from UniHM.optimizer import optimize_svh_to_fixed_object
 from UniHM.dataset import load_dataset_squential
 from dex_retargeting.retargeting_config import RetargetingConfig
-RetargetingConfig.set_default_urdf_dir("/your_path")
+RetargetingConfig.set_default_urdf_dir("/home/iclr/dex-icra/dex-retargeting/assets/robots/hands")
 from dex_retargeting.constants import RobotName, HandType
 from UniHM.SFT.utils import build_seq_dataloaders, build_seq_dataloaders_list  # added build_seq_dataloaders_list
 import json
@@ -66,7 +65,6 @@ def export_dataset(args):
     model.eval()
     present_robot_keys = ckpt["present_robot_keys"]
 
-    # ------------- 新增：支持 train.txt / valid.txt 列表 -------------
     if args.train_list and args.valid_list and os.path.exists(args.train_list) and os.path.exists(args.valid_list):
         def _read_list(path):
             with open(path, 'r') as f:
@@ -83,10 +81,6 @@ def export_dataset(args):
         train_loader, val_loader = build_seq_dataloaders_list(train_files, valid_files, batch_size=1, num_workers=0)
     else:
         print("using glob")
-        # train_loader, val_loader = build_seq_dataloaders(args.data_glob, batch_size=1, num_workers=0)
-        # train_files = list(train_loader.dataset.files)
-        # val_files = list(val_loader.dataset.files)
-    # -------------------------------------------------------------
 
     out_root_train = "/your_path/train"
     out_root_valid = "/your_path/valid"
@@ -114,20 +108,14 @@ def export_dataset(args):
             text = f"grasp object id {ds.get('grasped_with_obj_id', '')}"
             tok = model.tokenizer([text], padding=True, return_tensors="pt")
             tok = {k: v.to(device) for k, v in tok.items()}
-            # 对objpose添加10%噪声
-            noise = torch.randn_like(obj_pose_seq) * torch.max(obj_pose_seq) * 2
-            objpose_noise =  obj_pose_seq + noise
 
             mano_mask = torch.zeros((mano_pose.shape[0], mano_pose.shape[1]), device=device)
             mano_mask[:, : args.mano_prefix_frames] = 1.0
-            # -------------------------
-            # First generation (generation)
-            # -------------------------
             with torch.no_grad():
                 out = model(
                     mano_pose=mano_pose,
                     object_pointcloud=pointcloud,
-                    object_pose_seq=objpose_noise,
+                    object_pose_seq=obj_pose_seq,
                     text_inputs=tok,
                     decoder_branch=args.decoder_branch,
                     text_position=args.text_position,
@@ -141,16 +129,12 @@ def export_dataset(args):
                     generation[_base_name(key)] = pred_bt.cpu().numpy()
                 if hasattr(model.vqvae, 'mano_decoder') and model.vqvae.mano_decoder is not None:
                     generation['mano'] = model.vqvae.mano_decoder(mano_vq_hat.to(torch.float32)).squeeze(-1).cpu().numpy()
-
-            # -------------------------
-            # Second generation pass (generation2) - same prompt to measure stochastic differences
-            # -------------------------
             with torch.no_grad():
                 out2 = model(
                     mano_pose=mano_pose,
                     object_pointcloud=pointcloud,
                     object_pose_seq=obj_pose_seq,
-                    text_inputs=tok,  # same text
+                    text_inputs=tok,
                     decoder_branch=args.decoder_branch,
                     text_position=args.text_position,
                     mano_mask=mano_mask,
@@ -163,10 +147,6 @@ def export_dataset(args):
                     generation2[_base_name(key)] = pred_bt2.cpu().numpy()
                 if hasattr(model.vqvae, 'mano_decoder') and model.vqvae.mano_decoder is not None:
                     generation2['mano'] = model.vqvae.mano_decoder(mano_vq_hat2.to(torch.float32)).squeeze(-1).cpu().numpy()
-
-            # -------------------------
-            # Similar text generation (generation_sim) - modified prompt to measure semantic robustness
-            # -------------------------
             sim_text = f"use the object, which id is {ds.get('grasped_with_obj_id', '')}"
             tok_sim = model.tokenizer([sim_text], padding=True, return_tensors="pt")
             tok_sim = {k: v.to(device) for k, v in tok_sim.items()}
@@ -188,22 +168,22 @@ def export_dataset(args):
                     generation_sim[_base_name(key)] = pred_bt_sim.cpu().numpy()
                 if hasattr(model.vqvae, 'mano_decoder') and model.vqvae.mano_decoder is not None:
                     generation_sim['mano'] = model.vqvae.mano_decoder(mano_vq_hat_sim.to(torch.float32)).squeeze(-1).cpu().numpy()
-            # Raw data (all available hand poses)
             raw_block = {}
             raw_block['mano'] = mano_pose.squeeze(0).cpu().numpy()
             for k, v in ds.items():
                 if k.endswith('_qpos'):
                     raw_block[_base_name(k)] = v.cpu().numpy() if hasattr(v, 'cpu') else v
 
-            # Optimization (only selected hands if present in generation)
             optimization = {}
-            # Setup viewer for optimization
-            viewer = RobotHandViewer(
+            viewer = RetargetingProcessor(
                 robot_names=[RobotName.allegro, RobotName.shadow, RobotName.svh],
                 hand_type=HandType.right,
-                headless=True,
             )
-            objmesh = [objmesh.tolist()]
+            if hasattr(objmesh, 'tolist'):
+                objmesh = objmesh.tolist()
+            if isinstance(objmesh, str):
+                objmesh = [objmesh]
+            
             viewer.load_object_hand({
                 "ycb_ids": ycb_ids,
                 "object_mesh_file": objmesh,
@@ -219,32 +199,6 @@ def export_dataset(args):
             )
             if contact_start is None:
                 contact_start = args.contact_fallback_frames
-            # MANO optimization
-            # if 'mano' in generation:
-            #     try:
-            #         mano_opt = optimize_mano_to_fixed_object(
-            #             viewer,
-            #             objpose_aligned,
-            #             grasped_obj_idx,
-            #             obj_pc_local,
-            #             generation['mano'],
-            #             iters_per_frame=args.iters_per_frame,
-            #             ik_lambda=args.ik_lambda,
-            #             dq_max=args.dq_max,
-            #             start_frame=contact_start,
-            #             contact_margin=args.contact_margin,
-            #             warm_frames=args.warm_frames,
-            #             reg_to_generated=args.reg_to_generated,
-            #             reg_to_prev=args.reg_to_prev,
-            #             blend_frames=args.blend_frames,
-            #             pre_contact_opt_frames=args.pre_contact_opt_frames,
-            #             pre_blend_frames=args.pre_blend_frames,
-            #             pre_weight_power=args.pre_weight_power,
-            #         )
-            #         optimization['mano'] = mano_opt
-            #     except Exception as e:
-            #         print(f"[WARN] MANO optimization failed {fp}: {e}")
-            # Allegro
             if 'allegro' in generation:
                 try:
                     allegro_opt = optimize_allegro_to_fixed_object(
@@ -346,7 +300,6 @@ def export_dataset(args):
             try:
                 np.savez_compressed(out_path, data=sample)
             except Exception:
-                # fallback without compression
                 np.savez(out_path, data=sample)
         print(f"{split_name} saved to {out_dir}")
 
@@ -357,26 +310,25 @@ def export_dataset(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate / optimize and optionally export dataset")
-    parser.add_argument("--data_glob", default="/home/your_path/data/robot_data/*.npz")
-    # 新增：文件列表方式（若提供则优先生效）
-    parser.add_argument("--train-list", type=str, default="/home/your_path/UniHM/UniHM/train_oak.txt", help="Path to train.txt (one npz path per line)")
-    parser.add_argument("--valid-list", type=str, default="/home/your_path/UniHM/UniHM/valid_oak.txt", help="Path to valid.txt (one npz path per line)")
+    parser.add_argument("--data_glob", default="/home/iclr/data/robot_data/*.npz")
+
+    parser.add_argument("--train-list", type=str, default="/home/iclr/train.txt", help="Path to train.txt (one npz path per line)")
+    parser.add_argument("--valid-list", type=str, default="/home/iclr/valid.txt", help="Path to valid.txt (one npz path per line)")
     parser.add_argument("--idx", type=int, default=0)
     parser.add_argument("--device", default="cuda", help="e.g., cuda, cuda:0, cuda:1, or cpu")
-    parser.add_argument("--vqvae_ckpt", default="/home/your_path/UniHM/UniHM/UniHM/ckpt/memd/conv1d/memd_conv1d.pth")
-    parser.add_argument("--sft_ckpt", default="/home/your_path/UniHM/UniHM/sft_best_oak.pth")
-    parser.add_argument("--video_path", default="/home/your_path/UniHM/UniHM/videos/hands_gen.mp4")
-    # 模型与解码配置
+    parser.add_argument("--vqvae_ckpt", default="/home/iclr/UniHM/datasets/vqvae_with_mano_decoder.pth")
+    parser.add_argument("--sft_ckpt", default="/home/iclr/data/ckpoints/sft_best.pth")
+
     parser.add_argument("--qwen_model", default="Qwen/Qwen3-0.6B", help="Qwen 模型名称或本地路径")
     parser.add_argument("--qwen_dtype", default="fp32", choices=["bf16", "fp16", "fp32"], help="Qwen 推理精度：bf16/fp16/fp32")
     parser.add_argument("--decoder_branch", type=int, default=2, help="VQVAE 解码分支索引（0=Allegro 分支）")
     parser.add_argument("--text_position", default="prefix", help="文本与时序结合方式，默认 prefix")
-    # 生成前缀与接触检测
+
     parser.add_argument("--mano_prefix_frames", type=int, default=5, help="Qwen 生成时使用的前缀监督帧数")
     parser.add_argument("--motion_trans_thresh", type=float, default=0.003, help="物体开始移动检测的平移阈值(米)")
     parser.add_argument("--motion_min_consecutive", type=int, default=3, help="达到阈值的最少连续帧数")
     parser.add_argument("--contact_fallback_frames", type=int, default=5, help="未检测到运动时，接触起点的备用前缀帧数")
-    # 优化与平滑相关参数
+
     parser.add_argument("--iters_per_frame", type=int, default=10, help="每帧高斯牛顿优化迭代次数")
     parser.add_argument("--ik_lambda", type=float, default=1e-3, help="阻尼项 λ，用于稳定求解 (H+λI)")
     parser.add_argument("--dq_max", type=float, default=0.03, help="单次迭代的关节步长上限")
@@ -393,14 +345,13 @@ def main():
         default=1.0,
         help="接触前残差权重递增的幂次（>1 更慢启动更稳）",
     )
-    # Export options
+
     parser.add_argument("--log_interval", type=int, default=1, help="导出进度打印间隔")
 
     args = parser.parse_args()
 
     export_dataset(args)
 
-    # 可扩展: 其它 pipeline
 
 if __name__ == "__main__":
     main()

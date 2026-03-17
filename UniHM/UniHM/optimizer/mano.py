@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Tuple
-from vizHandObj.hand_robot_viewer import RobotHandViewer
 from .utils import posquat_to_T, transform_points
 # NEW: import torch for batched MANO forward / autograd
 import torch
@@ -19,7 +18,7 @@ _MANO_TIP_IDXS = [4, 8, 12, 16, 20]
 _THUMB_TIP_LOCAL_IDX = 4  # index within the ordered tips list
 
 
-def _mano_tip_positions_in_cam(viewer: RobotHandViewer, mano_vec51: np.ndarray) -> np.ndarray:
+def _mano_tip_positions_in_cam(viewer, mano_vec51: np.ndarray) -> np.ndarray:
     """Compute MANO fingertip positions (camera frame) for a given 51D vector.
 
     Args:
@@ -38,7 +37,7 @@ def _mano_tip_positions_in_cam(viewer: RobotHandViewer, mano_vec51: np.ndarray) 
 
 
 def _numerical_jacobian_mano(
-    viewer: RobotHandViewer,
+    viewer,
     x: np.ndarray,
     eps_pose: float = 1e-3,
     eps_trans: float = 1e-3,
@@ -144,7 +143,7 @@ def _numerical_jacobian_mano(
 
 
 def optimize_mano_to_fixed_object(
-    viewer: RobotHandViewer,
+    viewer,
     objpose_seq: np.ndarray,
     grasped_obj_idx: int,
     obj_pc_local: np.ndarray,

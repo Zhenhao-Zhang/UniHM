@@ -3,6 +3,7 @@ from UniHM.vqvae import MultiDecoderVQVAE
 import torch
 import random
 import matplotlib.pyplot as plt
+import json
 
 ROBOT_KEYS_ORDER = [
     "allegro_hand_qpos",
@@ -11,6 +12,7 @@ ROBOT_KEYS_ORDER = [
     "leap_hand_qpos",
     "ability_hand_qpos",
     "panda_hand_qpos",
+    "inspire_hand_qpos"
 ]
 
 
@@ -37,8 +39,9 @@ def compute_loss(ypred, ydict):
 
 
 def train():
-    data=load_dataset_single('/home/main/dex-ICLR/UniHM/UniHM/dataset/dataset.npz')
-    ckpt= "/home/main/dex-ICLR/UniHM/model_without_cold.pth"
+    data = load_dataset_single('/home/iclr/UniHM/datasets/dataset.npz')
+    ckpt = "/home/iclr/UniHM/datasets/vqvae.pth"
+    save_dir = "/home/iclr/UniHM/datasets/vqvae.pth"
     random.shuffle(data)
     train_dataset = HandDataset(data)
     val_dataset = HandDataset(data)
@@ -65,7 +68,6 @@ def train():
     x0, _ = train_dataset[0]
     input_length = int(x0.shape[-1])
 
-    # Use MLP frontend for efficiency: (B, 1, L) -> (B, D) -> code (B, D) -> decoders (B, out_dim)
     model = MultiDecoderVQVAE(
         in_dim=1,               # kept for Conv1d compatibility; unused in MLP path
         h_dim=128,              # hidden width
@@ -76,7 +78,7 @@ def train():
         beta=0.25,              # VQ commitment cost
         num_decoders=len(out_dims),
         decoder_out_channels=out_dims,
-        use_mlp=True,           # enable MLP path for speed and correct shapes
+        use_mlp=False,           # enable MLP path for speed and correct shapes
         input_length=input_length,
     ).to(device)
     params = {
@@ -89,9 +91,11 @@ def train():
         "beta": 0.25,
         "num_decoders": len(out_dims),
         "decoder_out_channels": out_dims,
-        "use_mlp": True,
+        "use_mlp": False,
         "input_length": input_length,
     }
+    with open("/home/iclr/UniHM/datasets/vqvae_config.json", "w") as f:
+        json.dump(params, f, indent=4)
     print("Model parameters:", params)
     try:
         state = torch.load(ckpt, map_location=device)
@@ -158,7 +162,7 @@ def train():
 
         if valid_loss < loss_best:
             loss_best = valid_loss
-            torch.save(model.state_dict(), "model_without_cold.pth")
+            torch.save(model.state_dict(), save_dir)
         print(f"Epoch {epoch}\tLoss: {train_loss/len(train_dataloader):.6f}\tValid Loss: {valid_loss/len(valid_dataloader):.6f}")
         print(f"\tCodebook Util (train): {train_used_cnt}/{n_e} ({train_util*100:.1f}%)\t(valid): {valid_used_cnt}/{n_e} ({valid_util*100:.1f}%)")
 

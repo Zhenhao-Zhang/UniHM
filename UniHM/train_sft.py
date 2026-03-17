@@ -46,15 +46,15 @@ def compute_multihead_l1(model, q_hidden, targets: Dict[str, torch.Tensor], pres
         pred_bt = model.vqvae.decode(z_bt, branch=i).squeeze(-1)  # (B*T, D_out)
         pred = pred_bt.view(B, T, -1)  # (B, T, D_out)
         tgt = targets[tgt_key].to(device)  # (B, T, D_out)
-        loss = loss + l1(pred, tgt)
+        loss = loss + l1(pred[:,6:], tgt[:,6:])
         used += 1
     # MANO decoder (treat as an extra branch)
-    if mano_pose is not None and hasattr(model.vqvae, 'mano_decoder') and model.vqvae.mano_decoder is not None:
-        pred_bt_mano = model.vqvae.mano_decoder(z_bt).squeeze(-1)  # (B*T, D_mano)
-        pred_mano = pred_bt_mano.view(B, T, -1)
-        tgt_mano = mano_pose.to(device)
-        loss = loss + l1(pred_mano, tgt_mano)
-        used += 1
+    # if mano_pose is not None and hasattr(model.vqvae, 'mano_decoder') and model.vqvae.mano_decoder is not None:
+    #     pred_bt_mano = model.vqvae.mano_decoder(z_bt).squeeze(-1)  # (B*T, D_mano)
+    #     pred_mano = pred_bt_mano.view(B, T, -1)
+    #     tgt_mano = mano_pose.to(device)
+    #     loss = loss + l1(pred_mano, tgt_mano)
+    #     used += 1
     if used == 0:
         return torch.tensor(0.0, device=device)
     return loss
@@ -129,7 +129,7 @@ def train(args):
         train_loader, val_loader = build_seq_dataloaders_list(train_files, valid_files, batch_size=args.batch_size, num_workers=args.num_workers)
     else:
         print("usie glob")
-        # train_loader, val_loader = build_seq_dataloaders(args.seq_glob, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader, val_loader = build_seq_dataloaders(args.seq_glob, batch_size=args.batch_size, num_workers=args.num_workers)
 
     for epoch in range(start_epoch, args.epochs + 1):
         model.train()
@@ -137,6 +137,7 @@ def train(args):
         running = 0.0
         for batch in pbar:
             mano_pose = batch["mano_pose"].to(device)            # (B, T, Dm)
+            x_input = batch["x_input"].to(device)            # (B, T, Dx)
             pointcloud = batch["pointcloud"].to(device)          # (B, N, 3)
             objpose = batch["object_pose_seq"].to(device)
             # Respect nopose flag: do not provide object pose to model
@@ -365,9 +366,9 @@ def valid(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SFT training (generation only) with multi-hand L1 loss, point cloud + object pose conditioning")
-    parser.add_argument("--dataset-path", default="/home/main/dex-ICLR/UniHM/UniHM/dataset/dataset.npz")
-    parser.add_argument("--seq-glob", default="/home/main/data/robot_data/*.npz")
-    parser.add_argument("--vqvae-ckpt", default="/home/main/dex-ICLR/UniHM/UniHM/ckpt/memd/conv1d/memd_conv1d_mano_decoder.pth")
+    parser.add_argument("--dataset-path", default="/home/iclr/UniHM/datasets/dataset.npz")
+    parser.add_argument("--seq-glob", default="/home/iclr/data/robot_data/*.npz")
+    parser.add_argument("--vqvae-ckpt", default="/home/iclr/UniHM/datasets/vqvae_with_mano_decoder.pth")
     parser.add_argument("--qwen-id", default="Qwen/Qwen3-0.6B")
     parser.add_argument("--device", default="cuda:3")
     parser.add_argument("--epochs", type=int, default=2000)
@@ -375,7 +376,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", type=int, default=8)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--save-path", default="sft_best_oak_nomask.pth")
+    parser.add_argument("--save-path", default="/home/iclr/UniHM/datasets/model.pth")
     parser.add_argument("--train-qwen", default=True, action=argparse.BooleanOptionalAction)
     parser.add_argument("--train-decoders", default=True, action=argparse.BooleanOptionalAction)
     parser.add_argument("--resume-ckpt", type=str, default="")
@@ -383,8 +384,8 @@ if __name__ == "__main__":
     parser.add_argument("--nopose", action=argparse.BooleanOptionalAction, default=True, help="If set, do not pass object pose sequence to the model (object_pose_seq=None)")
     parser.add_argument("--mask", action=argparse.BooleanOptionalAction, default=True, help="Enable curriculum masking strategy for generation; if false, run two-stage (retargeting + generation) each step.")
     # 新增：文件列表方式
-    parser.add_argument("--train-list", type=str, default="train_oak.txt", help="Path to train.txt (one npz path per line)")
-    parser.add_argument("--valid-list", type=str, default="valid_oak.txt", help="Path to valid.txt (one npz path per line)")
+    parser.add_argument("--train-list", type=str, default="", help="Path to train.txt (one npz path per line)")
+    parser.add_argument("--valid-list", type=str, default="", help="Path to valid.txt (one npz path per line)")
     args = parser.parse_args()
     if args.mode == "train":
         train(args)

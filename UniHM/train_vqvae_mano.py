@@ -12,12 +12,11 @@ import random
 ROBOT_KEYS_ORDER = [
     "allegro_hand_qpos",
     "shadow_hand_qpos",
-    "svh_hand_qpos",              # may not exist (dataset uses schunk_svh_hand_qpos)
-    "schunk_svh_hand_qpos",       # add alternative key to be safe
+    "svh_hand_qpos",
     "leap_hand_qpos",
     "ability_hand_qpos",
     "panda_hand_qpos",
-    "panda_gripper_qpos",         # fallback if naming differs
+    "inspire_hand_qpos"
 ]
 
 def set_seed(seed:int):
@@ -171,11 +170,11 @@ def train_mano_decoder(args:argparse.Namespace):
 
 def parse_args():
     p = argparse.ArgumentParser("Train separate MANO decoder on existing VQ-VAE latent space")
-    p.add_argument('--dataset', type=str, default='/home/main/dex-ICLR/UniHM/UniHM/dataset/dataset.npz')
-    p.add_argument('--ckpt', type=str, default='/home/main/dex-ICLR/UniHM/UniHM/ckpt/memd/conv1d/memd_conv1d.pth')
-    p.add_argument('--config', type=str, default='')
-    p.add_argument('--out_ckpt', type=str, default='/home/main/dex-ICLR/UniHM/UniHM/ckpt/memd/conv1d/memd_conv1d_mano_decoder.pth')
-    p.add_argument('--out_decoder', type=str, default='/home/main/dex-ICLR/UniHM/UniHM/ckpt/memd/conv1d/mano_decoder_only.pth')
+    p.add_argument('--dataset', type=str, default='/home/iclr/UniHM/datasets/dataset.npz')
+    p.add_argument('--ckpt', type=str, default='/home/iclr/UniHM/datasets/vqvae.pth')
+    p.add_argument('--config', type=str, default='/home/iclr/UniHM/datasets/vqvae_config.json')
+    p.add_argument('--out_ckpt', type=str, default='/home/iclr/UniHM/datasets/vqvae_with_mano_decoder.pth')
+    p.add_argument('--out_decoder', type=str, default='/home/iclr/UniHM/datasets/mano_decoder_only.pth')
     p.add_argument('--in_dim', type=int, default=1)
     p.add_argument('--h_dim', type=int, default=128)
     p.add_argument('--res_h_dim', type=int, default=128)

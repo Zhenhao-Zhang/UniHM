@@ -24,6 +24,7 @@ ROBOT_KEYS_ORDER = [
     # two variants for Panda
     "panda_hand_qpos",
     "panda_gripper_qpos",
+    "inspire_hand_qpos"
 ]
 
 # Map decoder canonical keys to acceptable target key aliases in sequential data
@@ -36,6 +37,7 @@ DECODER_KEY_ALIASES: Dict[str, List[str]] = {
     "ability_hand_qpos": ["ability_hand_qpos"],
     "panda_hand_qpos": ["panda_hand_qpos", "panda_gripper_qpos"],
     "panda_gripper_qpos": ["panda_hand_qpos", "panda_gripper_qpos"],
+    "inspire_hand_qpos": ["inspire_hand_qpos"],
 }
 
 # Fixed sequence length for batching (crop or pad)
@@ -57,6 +59,7 @@ class SeqDataset(Dataset):
     def __getitem__(self, idx):
         result = load_dataset_squential(self.files[idx])
         mano = result["hand_pose"].to(torch.float32)  # (T, Dm)
+        x_input = result["inspire_hand_qpos"].to(torch.float32)
         pointcloud = result["grasped_obj_point3d"].to(torch.float32)  # (N, 3)
         grasped_with_obj_id = result.get("grasped_with_obj_id", "")
         text = f"grasp object id {grasped_with_obj_id}"  # kept as simple identifier text
@@ -65,12 +68,13 @@ class SeqDataset(Dataset):
         for k, v in result.items():
             if k.endswith("_qpos"):
                 targets[k] = v.to(torch.float32)  # (T, Dk)
-        return {"mano_pose": mano, "pointcloud": pointcloud, "object_pose_seq": obj_pose_seq, "text": text, "targets": targets}
+        return {"mano_pose": mano, "x_input": x_input, "pointcloud": pointcloud, "object_pose_seq": obj_pose_seq, "text": text, "targets": targets}
 
 
 def collate_seq(batch: List[Dict[str, any]]):
     manos = []
     objposes = []
+    x_inputs = []
     pcls = []
     texts: List[str] = []
     targets_collated: Dict[str, List[torch.Tensor]] = {}
@@ -102,12 +106,14 @@ def collate_seq(batch: List[Dict[str, any]]):
 
     for b in batch:
         m = b["mano_pose"]  # (T, Dm)
+        x_in = b["x_input"]
         op = b["object_pose_seq"]  # (T, Dp)
         pc = b["pointcloud"]  # (N, 3)
         T = m.size(0)
         if T >= T_FIXED:
             start = torch.randint(0, T - T_FIXED + 1, (1,)).item()
             m = m[start:start + T_FIXED]
+            x_in = x_in[start:start + T_FIXED]
             op = op[start:start + T_FIXED]
             cropped_targets = {k: t[start:start + T_FIXED] for k, t in b["targets"].items()}
         else:
@@ -116,6 +122,8 @@ def collate_seq(batch: List[Dict[str, any]]):
             if T > 0:
                 last_m = m[-1:].expand(pad, -1)
                 m = torch.cat([m, last_m], dim=0)
+                last_x = x_in[-1:].expand(pad, -1)
+                x_in = torch.cat([x_in, last_x], dim=0)
                 last_op = op[-1:].expand(pad, -1)
                 op = torch.cat([op, last_op], dim=0)
                 cropped_targets = {}
@@ -125,10 +133,12 @@ def collate_seq(batch: List[Dict[str, any]]):
             else:
                 # Fallback if an empty sequence appears (shouldn't normally happen)
                 m = torch.zeros((T_FIXED, m.size(-1)), dtype=m.dtype)
+                x_in = torch.zeros((T_FIXED, x_in.size(-1)), dtype=x_in.dtype)
                 op = torch.zeros((T_FIXED, op.size(-1)), dtype=op.dtype)
                 cropped_targets = {k: torch.zeros((T_FIXED, t.size(-1)), dtype=t.dtype) for k, t in b["targets"].items()}
 
         manos.append(m)
+        x_inputs.append(x_in)
         objposes.append(op)
         pcls.append(sample_pointcloud(pc))
         texts.append(b["text"])
@@ -136,10 +146,11 @@ def collate_seq(batch: List[Dict[str, any]]):
             targets_collated.setdefault(k, []).append(t)
 
     mano = torch.stack(manos, dim=0)              # (B, T_FIXED, Dm)
+    x_input_batch = torch.stack(x_inputs, dim=0)
     objpose = torch.stack(objposes, dim=0)        # (B, T_FIXED, Dp)
     pcl = torch.stack(pcls, dim=0)                # (B, N_POINTS, 3)
     targets_batch = {k: torch.stack(vs, dim=0) for k, vs in targets_collated.items()}
-    return {"mano_pose": mano, "object_pose_seq": objpose, "pointcloud": pcl, "text": texts, "targets": targets_batch}
+    return {"mano_pose": mano,"x_input": x_input_batch, "object_pose_seq": objpose, "pointcloud": pcl, "text": texts, "targets": targets_batch}
 
 
 def build_seq_dataloaders_list(train_list: str, valid_list: str, batch_size: int = 32, num_workers: int = 4):
@@ -193,12 +204,12 @@ def build_model_and_meta(device: torch.device, single_dataset_path: str, qwen_id
         n_embeddings=8192,
         embedding_dim=512,
         beta=0.25,
-        num_decoders=6,
-        decoder_out_channels=[22,30,26,22,16,8],
+        num_decoders=7,
+        decoder_out_channels=[22,30,26,22,16,8,18],
         use_mlp=False,
         input_length=51
     )
-
+    print("VQVAE parameters:", vqvae_kwargs)
     model = build_qwen_vqvae_aligner(
         vqvae_ckpt_path=vqvae_ckpt,
         vqvae_kwargs=vqvae_kwargs,
