@@ -10,7 +10,7 @@ This is the offical code repo for **ICLR 2026** paper **UniHM: Unified Dexterous
 
 # Disclaimers
 - Code Quality Level: Tired grad student, lots of hard code in my repo
-- Training Enviroment: A800 80G GPUs
+- Training Enviroment: A100 80G GPUs
 - Questions: please drop me an email, it is the fastest way to get feedback
 
 
@@ -75,11 +75,9 @@ python inference.py
 ```
 python eval.py
 ```
-# Weights of UniHM(This weights for Real-World Deployed on Inspire Hands)
+# Weights of UniHM
 
-[Weights(Baidu Netdisk)](https://pan.baidu.com/s/1oYO_a6FOKloeHNCHiYnxVA?pwd=gcyb)
-
-[Weights(Google Drive)](https://drive.google.com/drive/folders/1DjItYOE_MyMMyCtb3pKmpJjIsIz6B8eN?usp=drive_link)
+[Weights](https://drive.google.com/drive/folders/1DjItYOE_MyMMyCtb3pKmpJjIsIz6B8eN?usp=sharing)
 
 # Real-World SetUP
 
