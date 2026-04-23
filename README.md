@@ -36,6 +36,10 @@ Tips: You can install [dex-retargeting](https://github.com/dexsuite/dex-retarget
 [Qwen3-0.6b](https://www.modelscope.cn/models/Qwen/Qwen3-0.6B)
 
 # Data Prepare
+
+**You can now download our preprocessed dataset here: ([link](https://github.com/Zhenhao-Zhang/UniHM/releases/tag/dexycb_dataset))**
+
+
 1. Dataset
 
 [DexYCB](https://dex-ycb.github.io/)
